@@ -3,11 +3,12 @@ import * as path from 'path';
 
 // Types for parsed conversation elements
 interface ConversationMessage {
-  type: 'user' | 'assistant' | 'system' | 'tool' | 'thinking';
+  type: 'user' | 'assistant' | 'system' | 'tool' | 'thinking' | 'git';
   content: string;
   timestamp?: string;
   toolName?: string;
   fileName?: string;
+  isGitAction?: boolean;
 }
 
 interface CodeBlock {
@@ -43,6 +44,7 @@ interface ParsedConversation {
     assistantMessages: number;
     thinkingMessages: number;
     toolMessages: number;
+    gitMessages: number;
     filesModified: number;
     codeBlocksCount: number;
   };
@@ -146,6 +148,9 @@ class ConversationParser {
           const toolName = toolMatch[1];
           const toolArg = toolMatch[2] || '';
 
+          // Check if this is a git command
+          const isGitCommand = toolName === 'Bash' && /\bgit\b/.test(toolArg);
+
           // Determine file change type
           let changeType: 'read' | 'update' | 'create' | 'search' = 'read';
           if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(toolName)) {
@@ -167,10 +172,11 @@ class ConversationParser {
             currentSection.messages.push(currentMessage);
           }
           currentMessage = {
-            type: 'tool',
-            toolName: toolName,
+            type: isGitCommand ? 'git' : 'tool',
+            toolName: isGitCommand ? 'Git' : toolName,
             fileName: toolArg || undefined,
-            content: line
+            content: line,
+            isGitAction: isGitCommand
           };
         }
         continue;
@@ -283,6 +289,7 @@ class ConversationParser {
     let assistantMessages = 0;
     let thinkingMessages = 0;
     let toolMessages = 0;
+    let gitMessages = 0;
     let filesModified = new Set<string>();
     let codeBlocksCount = 0;
 
@@ -292,6 +299,7 @@ class ConversationParser {
         if (message.type === 'user') userMessages++;
         if (message.type === 'assistant') assistantMessages++;
         if (message.type === 'thinking') thinkingMessages++;
+        if (message.type === 'git') gitMessages++;
         if (message.type === 'tool') {
           toolMessages++;
           if (message.fileName) {
@@ -308,6 +316,7 @@ class ConversationParser {
       assistantMessages,
       thinkingMessages,
       toolMessages,
+      gitMessages,
       filesModified: filesModified.size,
       codeBlocksCount
     };
@@ -340,6 +349,7 @@ function generateHTML(parsed: ParsedConversation): string {
         user: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
         assistant: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>`,
         tool: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`,
+        git: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg>`,
         thinking: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>`,
         system: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>`
       };
@@ -348,6 +358,7 @@ function generateHTML(parsed: ParsedConversation): string {
         user: 'You',
         assistant: 'Claude',
         tool: msg.toolName || 'Tool',
+        git: 'Git',
         thinking: 'Thinking',
         system: 'System'
       };
@@ -669,6 +680,7 @@ function generateHTML(parsed: ParsedConversation): string {
     .message-user .message-icon { color: var(--accent-blue); }
     .message-assistant .message-icon { color: var(--accent-green); }
     .message-tool .message-icon { color: var(--accent-orange); }
+    .message-git .message-icon { color: #f14e32; }
     .message-thinking .message-icon { color: #f0883e; }
     .message-system .message-icon { color: var(--accent-purple); }
 
@@ -680,6 +692,7 @@ function generateHTML(parsed: ParsedConversation): string {
     .message-user .message-label { color: var(--accent-blue); }
     .message-assistant .message-label { color: var(--accent-green); }
     .message-tool .message-label { color: var(--accent-orange); }
+    .message-git .message-label { color: #f14e32; }
     .message-thinking .message-label { color: #f0883e; }
 
     .message-file {
@@ -708,6 +721,11 @@ function generateHTML(parsed: ParsedConversation): string {
 
     .message-tool {
       border-left: 3px solid var(--accent-orange);
+    }
+
+    .message-git {
+      border-left: 3px solid #f14e32;
+      background: rgba(241, 78, 50, 0.05);
     }
 
     .message-thinking {
@@ -951,6 +969,7 @@ function generateHTML(parsed: ParsedConversation): string {
     <button class="nav-btn" onclick="filterMessages('user')">User Messages</button>
     <button class="nav-btn" onclick="filterMessages('assistant')">Claude Responses</button>
     <button class="nav-btn" onclick="filterMessages('tool')">Tool Usage</button>
+    <button class="nav-btn" onclick="filterMessages('git')">Git Actions</button>
     <button class="nav-btn" onclick="filterMessages('thinking')">Thinking</button>
     <button class="nav-btn" onclick="expandAll()">Expand All</button>
     <button class="nav-btn" onclick="collapseAll()">Collapse All</button>

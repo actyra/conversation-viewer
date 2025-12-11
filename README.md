@@ -62,6 +62,7 @@ npx ts-node src/transformer.ts conversation.txt output.html
 - **User** (blue) - Your prompts and questions
 - **Assistant** (green) - Claude's responses
 - **Tool** (orange) - File operations, searches, commands
+- **Git** (red) - Git operations (commit, push, pull, etc.)
 - **Thinking** (amber) - Claude's reasoning and thought process
 - **System** (purple) - System messages and notifications
 
@@ -95,4 +96,4 @@ MIT
 
 ---
 
-v1.0.2
+v1.0.3
