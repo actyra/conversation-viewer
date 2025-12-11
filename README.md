@@ -54,7 +54,8 @@ npx ts-node src/transformer.ts conversation.txt output.html
 
 ### Interactive Controls
 - **Search** - Press `/` to focus, `Escape` to clear
-- **Filter** - View only User, Claude, or Tool messages
+- **Filter** - View only User, Claude, Tool, Git, or Thinking messages
+- **Emoji Filter** - Click any emoji to filter messages containing it (shows count)
 - **Expand/Collapse** - Navigate large conversations easily
 - **Copy Code** - One-click code block copying
 
@@ -96,4 +97,4 @@ MIT
 
 ---
 
-v1.0.3
+v1.0.4

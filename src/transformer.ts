@@ -47,6 +47,7 @@ interface ParsedConversation {
     gitMessages: number;
     filesModified: number;
     codeBlocksCount: number;
+    emojiCounts: Record<string, number>;
   };
 }
 
@@ -292,6 +293,10 @@ class ConversationParser {
     let gitMessages = 0;
     let filesModified = new Set<string>();
     let codeBlocksCount = 0;
+    let emojiCounts: Record<string, number> = {};
+
+    // Emoji regex pattern - matches most common emojis
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}]|[\u{1FA00}-\u{1FAFF}]|[\u{1F900}-\u{1F9FF}]/gu;
 
     for (const section of sections) {
       for (const message of section.messages) {
@@ -306,6 +311,14 @@ class ConversationParser {
             filesModified.add(message.fileName);
           }
         }
+
+        // Count emojis in message content
+        const emojis = message.content.match(emojiRegex);
+        if (emojis) {
+          for (const emoji of emojis) {
+            emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1;
+          }
+        }
       }
       codeBlocksCount += section.codeBlocks.length;
     }
@@ -318,7 +331,8 @@ class ConversationParser {
       toolMessages,
       gitMessages,
       filesModified: filesModified.size,
-      codeBlocksCount
+      codeBlocksCount,
+      emojiCounts
     };
   }
 }
@@ -906,10 +920,65 @@ function generateHTML(parsed: ParsedConversation): string {
       }
     }
 
+    /* Emoji Bar */
+    .emoji-bar {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.75rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .emoji-bar-label {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+    }
+
+    .emoji-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      padding: 0.375rem 0.625rem;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+    }
+
+    .emoji-item:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent-blue);
+      transform: scale(1.05);
+    }
+
+    .emoji-item.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+
+    .emoji-char {
+      font-size: 1.125rem;
+    }
+
+    .emoji-count {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .emoji-item.active .emoji-count {
+      color: white;
+    }
+
     /* Print styles */
     @media print {
       .header { position: static; }
-      .nav-btn, .copy-btn, .search-container { display: none; }
+      .nav-btn, .copy-btn, .search-container, .emoji-bar { display: none; }
       .section-content { display: block !important; }
       .conversation-section { break-inside: avoid; }
     }
@@ -974,6 +1043,20 @@ function generateHTML(parsed: ParsedConversation): string {
     <button class="nav-btn" onclick="expandAll()">Expand All</button>
     <button class="nav-btn" onclick="collapseAll()">Collapse All</button>
   </nav>
+
+  ${Object.keys(parsed.statistics.emojiCounts).length > 0 ? `
+  <div class="emoji-bar">
+    <span class="emoji-bar-label">Emojis:</span>
+    ${Object.entries(parsed.statistics.emojiCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([emoji, count]) => `
+        <div class="emoji-item" onclick="filterByEmoji('${emoji}')" data-emoji="${emoji}">
+          <span class="emoji-char">${emoji}</span>
+          <span class="emoji-count">x${count}</span>
+        </div>
+      `).join('')}
+  </div>
+  ` : ''}
 
   <main class="main-content">
     ${sectionsHTML}
@@ -1070,6 +1153,53 @@ function generateHTML(parsed: ParsedConversation): string {
       navigator.clipboard.writeText(code).then(() => {
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+
+    // Filter by emoji
+    let activeEmoji = null;
+    function filterByEmoji(emoji) {
+      // Toggle active state
+      document.querySelectorAll('.emoji-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      if (activeEmoji === emoji) {
+        // Clicking same emoji clears filter
+        activeEmoji = null;
+        document.querySelectorAll('.message').forEach(msg => {
+          msg.style.display = 'block';
+        });
+        return;
+      }
+
+      activeEmoji = emoji;
+      const clickedItem = document.querySelector(\`.emoji-item[data-emoji="\${emoji}"]\`);
+      if (clickedItem) clickedItem.classList.add('active');
+
+      // Filter messages containing the emoji
+      document.querySelectorAll('.message').forEach(msg => {
+        const text = msg.textContent;
+        if (text.includes(emoji)) {
+          msg.style.display = 'block';
+          msg.style.backgroundColor = 'rgba(88, 166, 255, 0.1)';
+        } else {
+          msg.style.display = 'none';
+          msg.style.backgroundColor = '';
+        }
+      });
+
+      // Auto-expand sections with matches
+      document.querySelectorAll('.conversation-section').forEach((section, index) => {
+        const content = document.getElementById('section-content-' + index);
+        const visibleMessages = content.querySelectorAll('.message:not([style*="display: none"])');
+        if (visibleMessages.length > 0) {
+          section.classList.add('expanded');
+          content.classList.add('expanded');
+        } else {
+          section.classList.remove('expanded');
+          content.classList.remove('expanded');
+        }
       });
     }
 
