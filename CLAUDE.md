@@ -1,0 +1,1 @@
+- dont include Claude Code in any commits messages

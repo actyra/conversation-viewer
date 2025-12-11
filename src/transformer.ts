@@ -495,10 +495,29 @@ function generateHTML(parsed: ParsedConversation): string {
       position: relative;
     }
 
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-link {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .logo-link:hover {
+      opacity: 0.9;
+    }
+
+    .logo-svg {
+      height: 36px;
+      width: auto;
+    }
+
     .version-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
       color: var(--text-muted);
@@ -506,6 +525,7 @@ function generateHTML(parsed: ParsedConversation): string {
       border-radius: 4px;
       font-size: 0.75rem;
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      flex-shrink: 0;
     }
 
     .header h1 {
@@ -1001,7 +1021,17 @@ function generateHTML(parsed: ParsedConversation): string {
 <body>
   <header class="header">
     <div class="header-content">
-      <span class="version-badge">v1.0.5</span>
+      <div class="header-top">
+        <a href="https://www.actyra.com" target="_blank" rel="noopener noreferrer" class="logo-link" title="Visit Actyra">
+          <svg class="logo-svg" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 45L25 5H35L55 45H45L41 35H19L15 45H5ZM22 27H38L30 10L22 27Z" fill="#2D4A5E"/>
+            <path d="M18 35C18 35 25 20 35 12C45 4 55 8 55 8" stroke="#E86A33" stroke-width="4" stroke-linecap="round" fill="none"/>
+            <path d="M60 45V8H68V45H60ZM75 45V8H83V45H75ZM75 28H68V22H83V28H75Z" fill="#2D4A5E"/>
+            <text x="62" y="38" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#2D4A5E">CTYRA</text>
+          </svg>
+        </a>
+        <span class="version-badge">v1.0.6</span>
+      </div>
       <h1>${escapeHtml(parsed.title)}</h1>
       <div class="header-meta">
         <span>
