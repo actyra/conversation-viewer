@@ -2,6 +2,14 @@
 
 A Node.js transformer that converts conversation session logs into beautiful, interactive web UIs.
 
+## Why I Built This
+
+I created this application for two key reasons:
+
+1. **Easy Conversation Search** - To quickly search through Claude Code conversations in an intuitive way, making it simple to find specific exchanges, code changes, or tool usage
+
+2. **Teaching & Demonstrations** - To show students, customers, and clients what Claude Code was doing during a session and what prompts I was using, making it easy to explain AI-assisted development workflows
+
 ## Features
 
 - **Intelligent Parsing** - Extracts user messages, assistant responses, tool usage, code blocks, and file changes
@@ -54,6 +62,7 @@ npx ts-node src/transformer.ts conversation.txt output.html
 - **User** (blue) - Your prompts and questions
 - **Assistant** (green) - Claude's responses
 - **Tool** (orange) - File operations, searches, commands
+- **Thinking** (amber) - Claude's reasoning and thought process
 - **System** (purple) - System messages and notifications
 
 ## Development
@@ -86,4 +95,4 @@ MIT
 
 ---
 
-v1.0.1
+v1.0.2

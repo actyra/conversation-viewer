@@ -3,7 +3,7 @@ import * as path from 'path';
 
 // Types for parsed conversation elements
 interface ConversationMessage {
-  type: 'user' | 'assistant' | 'system' | 'tool';
+  type: 'user' | 'assistant' | 'system' | 'tool' | 'thinking';
   content: string;
   timestamp?: string;
   toolName?: string;
@@ -41,6 +41,8 @@ interface ParsedConversation {
     totalMessages: number;
     userMessages: number;
     assistantMessages: number;
+    thinkingMessages: number;
+    toolMessages: number;
     filesModified: number;
     codeBlocksCount: number;
   };
@@ -124,24 +126,50 @@ class ConversationParser {
         continue;
       }
 
-      // Detect tool usage (Read, Update, Search, Bash)
-      if (line.startsWith('● Read(') || line.startsWith('● Update(') || line.startsWith('● Search(') || line.startsWith('● Bash(')) {
-        const toolMatch = line.match(/● (\w+)\(([^)]+)\)/);
+      // Detect thinking blocks (lines with thinking indicators)
+      if (line.includes('thinking') || line.includes('Thinking') || line.match(/^\s*<thinking>/) || line.match(/^\s*\[thinking\]/i)) {
+        if (currentMessage) {
+          currentSection.messages.push(currentMessage);
+        }
+        currentMessage = {
+          type: 'thinking',
+          content: line
+        };
+        continue;
+      }
+
+      // Detect tool usage (comprehensive list of all tools)
+      const toolPattern = /● (Read|Write|Edit|Bash|Grep|Glob|Search|Update|TodoWrite|MultiEdit|Task|WebFetch|WebSearch|NotebookEdit|AskUserQuestion|ExitPlanMode|EnterPlanMode|KillShell|TaskOutput|Skill|SlashCommand)\(/;
+      if (toolPattern.test(line)) {
+        const toolMatch = line.match(/● (\w+)\(([^)]*)\)?/);
         if (toolMatch) {
-          const fileChange: FileChange = {
-            fileName: toolMatch[2],
-            type: toolMatch[1].toLowerCase() as 'read' | 'update' | 'create' | 'search',
-            details: line
-          };
-          currentSection.fileChanges.push(fileChange);
+          const toolName = toolMatch[1];
+          const toolArg = toolMatch[2] || '';
+
+          // Determine file change type
+          let changeType: 'read' | 'update' | 'create' | 'search' = 'read';
+          if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(toolName)) {
+            changeType = 'update';
+          } else if (['Grep', 'Glob', 'Search', 'WebSearch'].includes(toolName)) {
+            changeType = 'search';
+          }
+
+          if (toolArg) {
+            const fileChange: FileChange = {
+              fileName: toolArg,
+              type: changeType,
+              details: line
+            };
+            currentSection.fileChanges.push(fileChange);
+          }
 
           if (currentMessage) {
             currentSection.messages.push(currentMessage);
           }
           currentMessage = {
             type: 'tool',
-            toolName: toolMatch[1],
-            fileName: toolMatch[2],
+            toolName: toolName,
+            fileName: toolArg || undefined,
             content: line
           };
         }
@@ -253,6 +281,8 @@ class ConversationParser {
     let totalMessages = 0;
     let userMessages = 0;
     let assistantMessages = 0;
+    let thinkingMessages = 0;
+    let toolMessages = 0;
     let filesModified = new Set<string>();
     let codeBlocksCount = 0;
 
@@ -261,8 +291,12 @@ class ConversationParser {
         totalMessages++;
         if (message.type === 'user') userMessages++;
         if (message.type === 'assistant') assistantMessages++;
-        if (message.type === 'tool' && message.fileName) {
-          filesModified.add(message.fileName);
+        if (message.type === 'thinking') thinkingMessages++;
+        if (message.type === 'tool') {
+          toolMessages++;
+          if (message.fileName) {
+            filesModified.add(message.fileName);
+          }
         }
       }
       codeBlocksCount += section.codeBlocks.length;
@@ -272,6 +306,8 @@ class ConversationParser {
       totalMessages,
       userMessages,
       assistantMessages,
+      thinkingMessages,
+      toolMessages,
       filesModified: filesModified.size,
       codeBlocksCount
     };
@@ -304,6 +340,7 @@ function generateHTML(parsed: ParsedConversation): string {
         user: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
         assistant: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>`,
         tool: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`,
+        thinking: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>`,
         system: `<svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>`
       };
 
@@ -311,6 +348,7 @@ function generateHTML(parsed: ParsedConversation): string {
         user: 'You',
         assistant: 'Claude',
         tool: msg.toolName || 'Tool',
+        thinking: 'Thinking',
         system: 'System'
       };
 
@@ -631,6 +669,7 @@ function generateHTML(parsed: ParsedConversation): string {
     .message-user .message-icon { color: var(--accent-blue); }
     .message-assistant .message-icon { color: var(--accent-green); }
     .message-tool .message-icon { color: var(--accent-orange); }
+    .message-thinking .message-icon { color: #f0883e; }
     .message-system .message-icon { color: var(--accent-purple); }
 
     .message-label {
@@ -641,6 +680,7 @@ function generateHTML(parsed: ParsedConversation): string {
     .message-user .message-label { color: var(--accent-blue); }
     .message-assistant .message-label { color: var(--accent-green); }
     .message-tool .message-label { color: var(--accent-orange); }
+    .message-thinking .message-label { color: #f0883e; }
 
     .message-file {
       font-size: 0.75rem;
@@ -668,6 +708,11 @@ function generateHTML(parsed: ParsedConversation): string {
 
     .message-tool {
       border-left: 3px solid var(--accent-orange);
+    }
+
+    .message-thinking {
+      border-left: 3px solid #f0883e;
+      background: rgba(240, 136, 62, 0.05);
     }
 
     /* Inline Code */
@@ -906,6 +951,7 @@ function generateHTML(parsed: ParsedConversation): string {
     <button class="nav-btn" onclick="filterMessages('user')">User Messages</button>
     <button class="nav-btn" onclick="filterMessages('assistant')">Claude Responses</button>
     <button class="nav-btn" onclick="filterMessages('tool')">Tool Usage</button>
+    <button class="nav-btn" onclick="filterMessages('thinking')">Thinking</button>
     <button class="nav-btn" onclick="expandAll()">Expand All</button>
     <button class="nav-btn" onclick="collapseAll()">Collapse All</button>
   </nav>
