@@ -117,31 +117,7 @@ class ConversationParser {
         continue;
       }
 
-      // Detect assistant responses (lines starting with "● ")
-      if (line.startsWith('● ')) {
-        if (currentMessage) {
-          currentSection.messages.push(currentMessage);
-        }
-        currentMessage = {
-          type: 'assistant',
-          content: line.substring(2)
-        };
-        continue;
-      }
-
-      // Detect thinking blocks (lines with thinking indicators)
-      if (line.includes('thinking') || line.includes('Thinking') || line.match(/^\s*<thinking>/) || line.match(/^\s*\[thinking\]/i)) {
-        if (currentMessage) {
-          currentSection.messages.push(currentMessage);
-        }
-        currentMessage = {
-          type: 'thinking',
-          content: line
-        };
-        continue;
-      }
-
-      // Detect tool usage (comprehensive list of all tools)
+      // Detect tool usage FIRST (before assistant) - comprehensive list of all tools
       const toolPattern = /● (Read|Write|Edit|Bash|Grep|Glob|Search|Update|TodoWrite|MultiEdit|Task|WebFetch|WebSearch|NotebookEdit|AskUserQuestion|ExitPlanMode|EnterPlanMode|KillShell|TaskOutput|Skill|SlashCommand)\(/;
       if (toolPattern.test(line)) {
         const toolMatch = line.match(/● (\w+)\(([^)]*)\)?/);
@@ -183,9 +159,33 @@ class ConversationParser {
         continue;
       }
 
+      // Detect assistant responses (lines starting with "● " but not tools)
+      if (line.startsWith('● ')) {
+        if (currentMessage) {
+          currentSection.messages.push(currentMessage);
+        }
+        currentMessage = {
+          type: 'assistant',
+          content: line.substring(2)
+        };
+        continue;
+      }
+
+      // Detect thinking blocks (lines with thinking indicators)
+      if (line.includes('thinking') || line.includes('Thinking') || line.match(/^\s*<thinking>/) || line.match(/^\s*\[thinking\]/i)) {
+        if (currentMessage) {
+          currentSection.messages.push(currentMessage);
+        }
+        currentMessage = {
+          type: 'thinking',
+          content: line
+        };
+        continue;
+      }
+
       // Detect tool results (lines starting with "  ⎿  ")
       if (line.includes('⎿')) {
-        if (currentMessage && currentMessage.type === 'tool') {
+        if (currentMessage && (currentMessage.type === 'tool' || currentMessage.type === 'git')) {
           currentMessage.content += '\n' + line;
         }
         continue;
@@ -492,6 +492,20 @@ function generateHTML(parsed: ParsedConversation): string {
     .header-content {
       max-width: 1200px;
       margin: 0 auto;
+      position: relative;
+    }
+
+    .version-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     }
 
     .header h1 {
@@ -987,6 +1001,7 @@ function generateHTML(parsed: ParsedConversation): string {
 <body>
   <header class="header">
     <div class="header-content">
+      <span class="version-badge">v1.0.5</span>
       <h1>${escapeHtml(parsed.title)}</h1>
       <div class="header-meta">
         <span>
