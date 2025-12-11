@@ -1031,8 +1031,23 @@ function generateHTML(parsed: ParsedConversation): string {
 
 // Main execution
 async function main() {
-  const inputFile = process.argv[2] || path.join(__dirname, '..', '2025-12-11-caveat-the-messages-below-were-generated-by-the-u001.txt');
-  const outputFile = process.argv[3] || path.join(__dirname, '..', 'conversation-viewer.html');
+  const inputFile = process.argv[2];
+  const outputFile = process.argv[3];
+
+  if (!inputFile || !outputFile) {
+    console.log('Conversation Transformer');
+    console.log('========================');
+    console.log('');
+    console.log('Usage: npx ts-node src/transformer.ts <input-file> <output-file>');
+    console.log('');
+    console.log('Arguments:');
+    console.log('  input-file   Path to the conversation log file (.txt)');
+    console.log('  output-file  Path for the generated HTML file (.html)');
+    console.log('');
+    console.log('Example:');
+    console.log('  npx ts-node src/transformer.ts conversation.txt output.html');
+    process.exit(1);
+  }
 
   console.log('Conversation Transformer');
   console.log('========================');

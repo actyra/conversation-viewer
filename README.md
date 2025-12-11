@@ -1,6 +1,6 @@
 # Conversation Viewer
 
-A Node.js transformer that converts Claude Code session logs into beautiful, interactive web UIs.
+A Node.js transformer that converts conversation session logs into beautiful, interactive web UIs.
 
 ## Features
 
@@ -19,26 +19,22 @@ npm install
 
 ## Usage
 
-### Basic Usage
-
-Transform the default input file:
-
 ```bash
-npm run transform
-```
-
-### Custom Input/Output
-
-```bash
-npx ts-node src/transformer.ts "path/to/input.txt" "path/to/output.html"
+npx ts-node src/transformer.ts <input-file> <output-file>
 ```
 
 ### Arguments
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `input` | Path to the conversation log file | `./2025-12-11-caveat-the-messages-below-were-generated-by-the-u001.txt` |
-| `output` | Path for the generated HTML file | `./conversation-viewer.html` |
+| Argument | Description | Required |
+|----------|-------------|----------|
+| `input-file` | Path to the conversation log file (.txt) | Yes |
+| `output-file` | Path for the generated HTML file (.html) | Yes |
+
+### Example
+
+```bash
+npx ts-node src/transformer.ts conversation.txt output.html
+```
 
 ## Output Features
 
@@ -90,4 +86,4 @@ MIT
 
 ---
 
-v1.0.0
+v1.0.1

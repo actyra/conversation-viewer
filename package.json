@@ -1,12 +1,10 @@
 {
   "name": "conversation-viewer",
-  "version": "1.0.0",
-  "description": "Transforms Claude Code conversation logs into interactive web UI",
+  "version": "1.0.1",
+  "description": "Transforms conversation logs into interactive web UI",
   "main": "dist/transformer.js",
   "scripts": {
-    "build": "tsc",
-    "transform": "npx ts-node src/transformer.ts",
-    "dev": "npx ts-node src/transformer.ts"
+    "build": "tsc"
   },
   "dependencies": {
     "marked": "^15.0.4"
