@@ -4,8 +4,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Input conversation logs
+# Input/Output files
 2025-12-11-caveat-the-messages-below-were-generated-by-the-u001.txt
-
-# Generated output
 conversation-viewer.html
