@@ -53,18 +53,17 @@ npx ts-node src/transformer.ts conversation.txt output.html
 - Code blocks extracted
 
 ### Interactive Controls
-- **Search** - Press `/` to focus, `Escape` to clear
-- **Filter** - View only User, Claude, Tool, Git, or Thinking messages
+- **Search** - Press `/` to focus, `Escape` to clear. Matching terms are highlighted in yellow.
+- **Filter** - View only User, Claude, Tool, or Git messages
 - **Emoji Filter** - Click any emoji to filter messages containing it (shows count)
 - **Expand/Collapse** - Navigate large conversations easily
 - **Copy Code** - One-click code block copying
 
 ### Message Types
 - **User** (blue) - Your prompts and questions
-- **Assistant** (green) - Claude's responses
+- **Claude** (green) - Claude's responses
 - **Tool** (orange) - File operations, searches, commands
 - **Git** (red) - Git operations (commit, push, pull, etc.)
-- **Thinking** (amber) - Claude's reasoning and thought process
 - **System** (purple) - System messages and notifications
 
 ## Development
@@ -97,4 +96,4 @@ MIT
 
 ---
 
-v1.0.13
+v1.0.14

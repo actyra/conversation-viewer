@@ -1,6 +1,6 @@
 {
   "name": "conversation-viewer",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Transforms conversation logs into interactive web UI",
   "main": "dist/transformer.js",
   "scripts": {
