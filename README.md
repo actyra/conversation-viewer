@@ -25,6 +25,21 @@ I created this application for two key reasons:
 npm install
 ```
 
+## Exporting from Claude Code
+
+To get your conversation log from Claude Code:
+
+1. During or after your Claude Code session, type `/export`
+2. Claude Code will save the conversation to a `.txt` file
+3. The file will be saved in your current working directory with a timestamped filename
+
+```bash
+# In Claude Code, simply type:
+/export
+```
+
+The exported file contains the full conversation including your prompts, Claude's responses, tool usage, and file operations - everything this transformer needs to generate the interactive HTML view.
+
 ## Usage
 
 ```bash
@@ -100,4 +115,4 @@ MIT
 
 ---
 
-v1.0.15
+v1.0.16
