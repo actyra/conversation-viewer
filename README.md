@@ -90,10 +90,14 @@ conversation-viewer/
 - Node.js 18+
 - npm or yarn
 
+## Screenshot
+
+![Conversation Viewer Screenshot](screenshot.png)
+
 ## License
 
 MIT
 
 ---
 
-v1.0.14
+v1.0.15
